@@ -1,0 +1,25 @@
+{
+  "name": "jstz-fa2-contract",
+  "version": "1.0.0",
+  "description": "FA2 (Fungible Asset 2) token standard implementation for Jstz",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "deploy": "npm run build && jstz deploy dist/index.js -n dev"
+  },
+  "keywords": [
+    "jstz",
+    "tezos",
+    "fa2",
+    "token",
+    "smart-contract"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}
+
