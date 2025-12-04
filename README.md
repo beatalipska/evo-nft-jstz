@@ -31,7 +31,7 @@ npm install
 jstz sandbox start
 ```
 
-Note: If you see an error about the configuration file, delete the `~/.config/jstz/` folder and try again.
+**Note:** If you see an error that the sandbox is already running, see the [Troubleshooting](#troubleshooting) section below.
 
 ## Building and Deploying
 
@@ -181,6 +181,42 @@ The smart function uses Jstz's key-value store to persist:
 - Operator permissions
 - Token metadata
 - Total supply per token
+
+## Troubleshooting
+
+### Sandbox "Already Running" Error
+
+If you encounter the error `ERROR The sandbox is already running!` when trying to start the sandbox, but no sandbox is actually running, follow these steps:
+
+1. **Remove stale sandbox state from config:**
+   ```bash
+   # Backup the config first (optional)
+   cp ~/.jstz/config.json ~/.jstz/config.json.backup
+   
+   # Edit ~/.jstz/config.json and remove the "sandbox" section
+   # Or use this command to remove it automatically:
+   # (Note: This requires jq - install with: brew install jq)
+   jq 'del(.sandbox)' ~/.jstz/config.json > ~/.jstz/config.json.tmp && mv ~/.jstz/config.json.tmp ~/.jstz/config.json
+   ```
+
+2. **Clean up Docker containers (if any):**
+   ```bash
+   docker ps -a | grep jstz
+   docker rm -f <container_id>  # Remove any stale containers
+   ```
+
+3. **Check for processes using port 8933:**
+   ```bash
+   lsof -i :8933
+   # Kill any processes if found
+   ```
+
+4. **Try starting the sandbox again:**
+   ```bash
+   jstz sandbox start
+   ```
+
+The issue occurs when the sandbox process crashes or is killed, but the config file still contains a reference to it with a stale PID. Removing the `sandbox` section from `~/.jstz/config.json` clears this stale state.
 
 ## License
 
