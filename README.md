@@ -1,21 +1,19 @@
-# FA2 Smart Function for Jstz
+# Evolving NFT Smart Function for Jstz
 
-This is a Jstz smart function that implements the FA2 (Fungible Asset 2) token standard, adapted for the Jstz platform.
+This is a Jstz smart function that implements an evolving NFT - a dynamic NFT that grows and evolves with each purchase, recording each buyer in its history and unlocking milestones.
 
 ## Features
 
-- ✅ Token transfers (single and batch)
-- ✅ Balance queries
-- ✅ Operator management (delegate transfer permissions)
-- ✅ Token minting
-- ✅ Token burning
-- ✅ Token metadata management
-- ✅ Total supply tracking
+- ✅ Dynamic NFT metadata that changes with each purchase
+- ✅ Growth levels that increase with each purchase
+- ✅ Milestone system (unlocks at levels 1, 5, 10, 20)
+- ✅ Ownership history tracking
+- ✅ Visual evolution (variant changes: Common → Rare → Epic → Legendary)
 
 ## Prerequisites
 
 - Node.js 22+
-- pnpm v10+
+- pnpm v10+ (or npm)
 - Jstz CLI installed
 - Docker (for local sandbox)
 
@@ -50,137 +48,55 @@ Or use the combined command:
 npm run deploy
 ```
 
-After deployment, you'll receive a `KT1` address for your smart function.
+After deployment, you'll receive a `tz1` address for your smart function.
 
 ## API Endpoints
 
-### Transfer Tokens
+### Get NFT Metadata
 ```bash
-# Single transfer
-jstz run jstz://<ADDRESS>/transfer -n dev -d '{
-  "transfers": [{
-    "from_": "tz1...",
-    "txs": [{
-      "to_": "tz1...",
-      "token_id": 0,
-      "amount": 100
-    }]
-  }]
+jstz run "jstz://<ADDRESS>/metadata/0" -n dev
+```
+
+Returns the current NFT metadata including:
+- Growth level
+- Variant (Common/Rare/Epic/Legendary)
+- Color
+- Attributes
+- Ownership history
+- Unlocked milestones
+
+### Purchase & Evolve NFT
+```bash
+jstz run jstz://<ADDRESS>/purchase -n dev -d '{
+  "buyer": "tz1...",
+  "tokenId": 0
 }'
 ```
 
-### Get Balance
-```bash
-jstz run "jstz://<ADDRESS>/balance?owner=tz1...&token_id=0" -n dev
-```
+Increases the growth level, adds the buyer to ownership history, and unlocks milestones if thresholds are reached.
 
-### Batch Balance Query
-```bash
-jstz run jstz://<ADDRESS>/balance_of -n dev -d '{
-  "requests": [
-    {"owner": "tz1...", "token_id": 0},
-    {"owner": "tz1...", "token_id": 1}
-  ]
-}'
-```
+## Frontend
 
-### Mint Tokens
-```bash
-jstz run jstz://<ADDRESS>/mint -n dev -d '{
-  "to": "tz1...",
-  "token_id": 0,
-  "amount": 1000
-}'
-```
+The project includes a React frontend for interacting with the evolving NFT.
 
-### Burn Tokens
-```bash
-jstz run jstz://<ADDRESS>/burn -n dev -d '{
-  "from": "tz1...",
-  "token_id": 0,
-  "amount": 100
-}'
-```
+1. **Navigate to frontend directory:**
+   ```bash
+   cd frontend
+   ```
 
-### Update Operators
-```bash
-jstz run jstz://<ADDRESS>/update_operators -n dev -d '{
-  "add_operators": [{
-    "owner": "tz1...",
-    "operator": "tz1...",
-    "token_id": null
-  }]
-}'
-```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-### Set Token Metadata
-```bash
-jstz run jstz://<ADDRESS>/set_token_metadata -n dev -d '{
-  "token_id": 0,
-  "symbol": "TKN",
-  "name": "My Token",
-  "decimals": 6
-}'
-```
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
 
-### Get Token Metadata
-```bash
-jstz run "jstz://<ADDRESS>/token_metadata?token_id=0" -n dev
-```
+4. **Open your browser** to `http://localhost:3000`
 
-### Get Total Supply
-```bash
-jstz run "jstz://<ADDRESS>/total_supply?token_id=0" -n dev
-```
-
-## Usage Example
-
-1. Deploy the smart function
-2. Set token metadata:
-```bash
-jstz run jstz://<ADDRESS>/set_token_metadata -n dev -d '{
-  "token_id": 0,
-  "symbol": "FA2",
-  "name": "FA2 Token",
-  "decimals": 6
-}'
-```
-
-3. Mint tokens to an address:
-```bash
-jstz run jstz://<ADDRESS>/mint -n dev -d '{
-  "to": "tz1YourAddress...",
-  "token_id": 0,
-  "amount": 1000000
-}'
-```
-
-4. Check balance:
-```bash
-jstz run "jstz://<ADDRESS>/balance?owner=tz1YourAddress...&token_id=0" -n dev
-```
-
-5. Transfer tokens:
-```bash
-jstz run jstz://<ADDRESS>/transfer -n dev -d '{
-  "transfers": [{
-    "from_": "tz1YourAddress...",
-    "txs": [{
-      "to_": "tz1RecipientAddress...",
-      "token_id": 0,
-      "amount": 100
-    }]
-  }]
-}'
-```
-
-## Storage
-
-The smart function uses Jstz's key-value store to persist:
-- Token balances (per owner, per token)
-- Operator permissions
-- Token metadata
-- Total supply per token
+5. **Enter your deployed smart function address** and start interacting with the NFT!
 
 ## Troubleshooting
 
@@ -218,7 +134,46 @@ If you encounter the error `ERROR The sandbox is already running!` when trying t
 
 The issue occurs when the sandbox process crashes or is killed, but the config file still contains a reference to it with a stale PID. Removing the `sandbox` section from `~/.jstz/config.json` clears this stale state.
 
+### Port 8933 Not Accessible on macOS
+
+On macOS, Docker's host networking mode doesn't properly expose ports to the host machine. If you can't connect to `http://127.0.0.1:8933` even though the sandbox is running, try one of these solutions:
+
+**Option 1: Use Docker port mapping (Recommended)**
+```bash
+# Stop any existing sandbox
+docker ps -a | grep jstz | awk '{print $1}' | xargs docker rm -f
+
+# Start sandbox with explicit port mapping
+docker run -d --name jstz-sandbox \
+  -p 8933:8933 -p 8932:8932 -p 18731:18731 \
+  -v ~/.jstz:/root/.jstz \
+  ghcr.io/trilitech/jstz-cli:20240320 sandbox start
+```
+
+**Note:** This may still not work because the Jstz service binds to `127.0.0.1` inside the container. If this doesn't work, try Option 2.
+
+**Option 2: Use socat port forwarding**
+```bash
+# Install socat if needed
+brew install socat
+
+# Find the container ID
+CONTAINER=$(docker ps --filter "ancestor=ghcr.io/trilitech/jstz-cli:20240320" --format "{{.ID}}" | head -1)
+
+# Forward port 8933 (run this in a separate terminal and keep it running)
+docker exec -it $CONTAINER sh -c "apk add socat && socat TCP-LISTEN:8933,fork,reuseaddr,bind=0.0.0.0 TCP:127.0.0.1:8933"
+```
+
+**Option 3: Access via Docker exec (for testing)**
+You can test the API directly inside the container:
+```bash
+CONTAINER=$(docker ps --filter "ancestor=ghcr.io/trilitech/jstz-cli:20240320" --format "{{.ID}}" | head -1)
+docker exec $CONTAINER sh -c "wget -qO- http://127.0.0.1:8933/health"
+```
+
+**Option 4: Modify Vite proxy to use container IP**
+If you can get the container's IP address, you can update the Vite proxy config to use it instead of localhost.
+
 ## License
 
 MIT
-
